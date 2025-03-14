@@ -1,0 +1,135 @@
+plugins {
+	id 'org.springframework.boot' version '2.6.5'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+	id 'eclipse-wtp'	
+	id 'war'
+}
+
+group = 'com.bi'
+version = '0.0.1'
+ext.biVersion = '1.2.3-SNAPSHOT'
+sourceCompatibility = '8'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+    // full exclude 
+    all*.exclude module : 'spring-boot-starter-logging'
+}
+
+webAppDirName = "WebContent"
+
+repositories {
+	mavenCentral()
+	maven { url 'https://repo.spring.io/milestone' }
+	maven { url 'https://repo.spring.io/snapshot' }
+	maven {
+        credentials {
+            username 'biuser'
+            password 'bi2009'
+        }
+        url 'http://nexus.softbi.com:8081/nexus/content/groups/public'
+        allowInsecureProtocol = true
+    }
+    flatDir {
+        dirs 'WebContent/WEB-INF/lib'
+    }
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+    compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	
+	// --- 客製化相關 --------
+    implementation "com.bi.base:bi-base-core:${biVersion}",
+            "com.bi.base:bi-base-springrest:${biVersion}"	
+	
+    // DB
+    implementation 'org.apache.commons:commons-dbcp2:2.9.0'
+    implementation 'org.apache.commons:commons-pool2:2.11.1'	
+    // JDBC Driver
+    //runtime "net.sourceforge.jtds:jtds:1.3.1" // jTDS  testCompile
+    implementation group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '8.2.2.jre8' // MS SQLServer Driver
+
+    // log4j2  https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-log4j2
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-log4j2', version: '2.6.5'
+        
+ 	//-- For War
+    //providedCompile "javax.servlet:javax.servlet-api:4.0.0"    
+	implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
+	implementation 'commons-io:commons-io:2.4'
+	// swagger2
+    //implementation group: 'io.springfox', name: 'springfox-swagger2', version: '2.9.2'
+    //implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.9.2'    
+    //implementation 'io.swagger:swagger-annotations:1.5.21'
+    //implementation 'io.swagger:swagger-models:1.5.21'
+    
+    //implementation group: 'io.springfox', name: 'springfox-swagger2', version: '3.0.0'
+    //implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: '3.0.0'
+    //-- 等候 Bug 修復再引用 : https://github.com/springfox/springfox/issues/3983
+    //implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
+
+    // swagger2 ,版本 2.10.x 以後需要三個依賴
+    //implementation group: 'io.springfox', name: 'springfox-swagger2', version: '2.10.5'
+    //implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.10.5'
+    //implementation group: 'io.springfox', name: 'springfox-spring-webmvc', version: '2.10.5'
+    implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
+    implementation group: 'org.quartz-scheduler', name: 'quartz', version: '2.3.2'
+    
+    // for Email
+    implementation group: 'com.sun.mail', name: 'javax.mail', version: '1.6.2' 
+
+    // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
+    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.9.3'
+
+    // https://mvnrepository.com/artifact/com.twelvemonkeys.servlet/servlet
+    implementation group: 'com.twelvemonkeys.servlet', name: 'servlet', version: '3.8.2'
+
+
+}
+
+war {
+    // Handle Copying Duplicate Files
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // fix, exclude tomcat prevents ServletException: java.lang.AbstractMethodError
+    if (System.getProperty('noEmbedTomcat') == 'Y') {
+        configurations.implementation.exclude module: 'spring-boot-starter-tomcat' // mark for run Spring Boot Application
+    }
+    archiveName = 'ICS-Utility-API.war'
+}
+
+tasks.named('test') {
+	//useJUnitPlatform()
+}
+
+task native2ascii {
+    doLast {
+        sourceSets.main.resources.srcDirs.each { dir ->
+            ant.delete() {
+                fileset(dir: "${dir}") {
+                    include(name: '**/*_zh_CN.properties')
+                    include(name: '**/*_zh_TW.properties')
+                }
+            }
+
+            ant.native2ascii(src: "${dir}", //'src/main/resources/',
+                dest: "${dir}",
+                includes: '**/*.utf-8',
+                encoding: 'UTF-8',
+                ext: '.properties')
+        }
+    }
+}
+
+compileJava.dependsOn native2ascii
+
