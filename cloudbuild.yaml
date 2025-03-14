@@ -2,6 +2,6 @@ steps:
   - name: gradle:jdk17 #使用gradle jdk17 的docker image
     entrypoint: ./gradlew
     args: ['clean', 'build']
-serviceAccount: 'projects/tli-bi/triggers/1810eb9b-e494-4909-b6c3-95974259c2d2"/450302107744-compute@developer.gserviceaccount.com'
+serviceAccount: 'projects/tli-bi/triggers/1810eb9b-e494-4909-b6c3-95974259c2d2/450302107744-compute@developer.gserviceaccount.com'
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
