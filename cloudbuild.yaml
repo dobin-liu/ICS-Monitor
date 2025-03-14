@@ -1,0 +1,4 @@
+steps:
+  - name: gradle:jdk17 #使用gradle jdk17 的docker image
+    entrypoint: ./gradlew
+    args: ['clean', 'build']
