@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Properties>
+    <Property name="fileRoot">D:/log/ICS-Utility-API/</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %.-2000msg%n" />
+		</Console>
+		<RollingFile name="ApiLog" fileName="${fileRoot}api.log"
+			filePattern="${fileRoot}api-%d{yyyy-MM-dd}-%i.log">
+			<PatternLayout pattern="%d %-5p [%t] %C (%F:%L) - %.-2000m%n" />
+			<Policies>
+				<TimeBasedTriggeringPolicy />
+				<SizeBasedTriggeringPolicy size="20MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="500">
+				<Delete basePath="${fileRoot}" maxDepth="2">
+					<IfFileName glob="api-*.log">
+						<IfLastModified age="60d" />
+					</IfFileName>
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingFile>
+    </Appenders>
+    <Loggers>
+        <Logger name="io.lettuce.core" level="INFO" />
+        <Logger name="springfox" level="ERROR" />
+        <Logger name="org.hibernate" level="ERROR" />
+        <Logger name="org.springframework" level="ERROR" />
+        <Logger name="org.apache.pdfbox" level="ERROR" />
+        <Logger name="org.apache.fontbox" level="ERROR" />
+        <Logger name="org.apache.axis.ConfigurationException" level="ERROR" />        
+        <Logger name="net.sf.jasperreports" level="INFO" />
+        <Logger name="org.apache.commons.digester.Digester" level="INFO" />
+        <Root level="debug">
+			<AppenderRef ref="ApiLog" />
+			<AppenderRef ref="Console" />
+		</Root>
+    </Loggers>
+</Configuration>

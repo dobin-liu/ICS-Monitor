@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+			               http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+			               http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+	
+	
+	<bean id="base.jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="base.dataSource" />
+		<property name="resultsMapCaseInsensitive" value="true" />
+	</bean>
+
+	<bean id="base.sqlHelper" class="com.bi.base.database.impl.DatabaseTypeAwareSqlHelper">
+		<constructor-arg index="0" value="${database.type:MSSQL}" />
+		<constructor-arg index="1" value="${database.schema:''}" />
+	</bean>
+
+	<bean id="base.projectcode.sqlUtil" class="com.bi.common.database.jdbc.BiSqlUtilImpl"
+		c:jdbcTemplate-ref="base.jdbcTemplate" c:databaseType="${database.type:MSSQL}"
+		c:schemaName="${database.schema:''}" c:sqlHelper-ref="base.sqlHelper"
+		c:dataSourceTransactionManager-ref="base.transactionManager" 
+		c:setupDataserno="${database.init:false}"
+		/>
+
+	<bean id="base.transactionManager" primary="true"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="base.dataSource" />
+	</bean>
+	<tx:annotation-driven transaction-manager="base.transactionManager" />
+
+    <!-- for Native JDBC Resource -->
+	<beans profile="dev,lsit,sit,uat,prod">
+		<bean id="base.dataSource" class="com.bi.base.database.BiDataSourceProxy">
+			<constructor-arg index="0" ref="baseDataSource" />
+			<constructor-arg index="1" value="${database.type:MSSQL}" />
+			<constructor-arg index="2" value="${database.schema:''}" />
+			<constructor-arg index="3" value="" />
+		</bean>
+		<!-- for tomcat -->
+		<bean id="baseDataSource" class="org.apache.commons.dbcp2.BasicDataSource" primary="true" 
+			destroy-method="close">
+			<property name="driverClassName" value="${database.jdbc.driverClassName:''}" />
+			<property name="url" value="${database.jdbc.url:''}" />
+			<property name="username" value="${database.jdbc.username:''}" />
+			<property name="password">
+				<bean
+					class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+					<property name="staticMethod"
+						value="com.bi.base.cipher.BlowfishCipherProcessor.staticDecode" />
+					<property name="arguments" value="${database.jdbc.pdco:''}" />
+				</bean>
+			</property>
+			<!-- 連接池(pool)中 連線數量的最大值，注意不是越大越好，須根據系統 CPU核心 與開啟的執行序數量搭配 -->
+			<property name="maxTotal" value="50" />
+			<!-- 測試連線是否有效的語法，透過連線送出此語法，並得到回傳結果，表示此連線正常 -->
+			<property name="validationQuery" value="select 1" />
+			<!-- 初始化時連接池(pool)中 預設空閒連線數量 -->
+			<property name="initialSize" value="1" />
+			<!-- 從連接池(pool) 取得連線的等候時間，超過此時間即會拋出 無法取得連線的錯誤訊息 -->
+			<property name="maxWaitMillis" value="90000" />
+			<!-- 檢測連接池(pool) 中 空閒連接的狀態，若檢測發生失敗則會將此連線從連接池中移除 -->
+			<property name="testWhileIdle" value="true" />
+			<!-- 每隔多久執行一次 連接池(pool) 空閒連接判斷，每次取得 numTestsPerEvictionRun 數量的空閒連接判斷，若超過空閒時間 
+				minEvictableIdleTimeMillis 則將此連線關閉移除 -->
+			<property name="timeBetweenEvictionRunsMillis" value="120000" />
+			<!-- 超過此空閒時間的連線會被回收銷毀 -->
+			<property name="minEvictableIdleTimeMillis" value="600000" />
+			<!-- 每次取得多少數量的空閒連接判斷 -->
+			<property name="numTestsPerEvictionRun" value="1" />
+			<!-- 當開啟的連接幾秒沒有被使用，被認為是不正常關閉連線，而將此連線關閉，回歸連線池 -->
+			<property name="removeAbandonedTimeout" value="90" />
+			<!-- 若發生 removeAbandoned 時，拋出 log 紀錄 -->
+			<property name="logAbandoned" value="true" />
+			<!-- 連接池(pool)中 至少保留空閒連線的數量 -->
+			<property name="minIdle" value="5" />
+		</bean>
+	</beans>
+	
+	<!-- for JNDI Resource -->
+	<beans profile="nouse">
+		<bean id="base.dataSource" class="com.bi.base.database.BiDataSourceProxy">
+			<constructor-arg index="0" ref="baseDataSource" />
+			<constructor-arg index="1" value="${database.type:MSSQL}" />
+			<constructor-arg index="2" value="${database.schema:''}" />
+			<constructor-arg index="3" value="" />
+		</bean>	
+
+        <!-- For  WebSphere JNDI -->
+<!--         <bean id="baseDataSource" class="org.springframework.jndi.JndiObjectFactoryBean" primary="true">		 -->
+<!-- 			<property name ="targetDataSource"> -->
+<!-- 				<bean class="org.springframework.jndi.JndiObjectFactoryBean"> -->
+<!-- 					<property name="jndiName" value="${database.jndi.name}"/> -->
+<!-- 				</bean> -->
+<!-- 			</property> -->
+<!-- 	    </bean> -->
+	    
+	    	
+	    <!-- For Tomcat JNDI -->
+		<bean id="baseDataSource" class="org.springframework.jdbc.datasource.IsolationLevelDataSourceAdapter" primary="true">
+			<property name ="targetDataSource">
+				<bean class="org.springframework.jndi.JndiObjectFactoryBean">
+					<property name="jndiName" value="${database.jndi.name:''}"/>
+				</bean>
+			</property>
+		</bean>
+	</beans>	
+	
+
+</beans>
